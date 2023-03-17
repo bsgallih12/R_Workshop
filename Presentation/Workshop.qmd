@@ -109,7 +109,7 @@ A new install of R will remove all installed packages. You must either re-instal
 
 * Oh and obviously it can read <span style="color:green;">Microsoft Excel</span> files
 
-### <span style="color:red;">R Code</span>
+### R Code
 ```{r import data}
 #| echo: true
 #| eval: false
