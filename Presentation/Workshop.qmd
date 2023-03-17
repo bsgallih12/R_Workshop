@@ -68,6 +68,11 @@ You can download the newest version of RStudio (Dec 2022) [here](https://posit.c
 :::
 ::::
 
+## Downloading Materials For Day 1
+
+You can download all the materials for Day 1 of this workshop [here](https://github.com/bsgallih12/R_Workshop/tree/main/Day%201)
+* You want the correlation.qmd, data_clean.qmd, ttest.qmd, and regression.qmd files
+
 ## Installing and Loading Packages
 
 :::{.panel-tabset}
@@ -165,7 +170,7 @@ For anyone who might work with database data, you can pull data from external da
 
 ## Live-ish Coding
 
-* Open the data_clean.R file provided. We're going to walk through some example code and then live code a little bit
+* Open the data_clean.qmd file provided. We're going to walk through some example code and then live code a little bit
 
 # {stringr} R package
 
@@ -177,7 +182,7 @@ For anyone who might work with database data, you can pull data from external da
 
 ## Live-ish Coding
 
-* Go back to the data_clean.R file provided. We're going to walk through some example code and then live code a little bit
+* Go back to the data_clean.qmd file provided. We're going to walk through some example code and then live code a little bit
 
 # {lubridate} R package
 
@@ -193,7 +198,7 @@ It won't auto convert your dates to weird incorrect formats like certain spreads
 
 ## Live-ish Coding
 
-* Go back to the data_clean.R file provided. We're going to walk through some example code and then live code a little bit
+* Go back to the data_clean.qmd file provided. We're going to walk through some example code and then live code a little bit
 
 # {ggplot2} R package
 
@@ -208,7 +213,7 @@ It won't auto convert your dates to weird incorrect formats like certain spreads
 
 ## "Live"ish Coding
 
-* Go back to the data_clean.R file provided. We're going to walk through some example code and then live code a little bit
+* Go back to the data_clean.qmd file provided. We're going to walk through some example code and then live code a little bit
 
 # Exporting Data
 
@@ -280,7 +285,7 @@ write.csv(df, file = "filename.csv")
 
 ## Live-ish Coding
 
-* Please see correlation.R file provided
+* Please see correlation.qmd file provided
 
 # T Tests
 
@@ -292,7 +297,7 @@ write.csv(df, file = "filename.csv")
 
 ## Live-ish Coding
 
-* Please see the correlation.R file provided
+* Please see the ttest.qmd file provided
 
 # Regression
 
@@ -309,7 +314,14 @@ While important, outliers and influential cases rarely influence results with a 
 
 ## Live-ish Coding
 
+* Please open the regression.qmd file provided
+
 # End of Day 1
+
+## Downloading Material For Day 2
+
+You can download all the materials for Day 2 of this workshop [here](https://github.com/bsgallih12/R_Workshop/tree/main/Day%201)
+* You want the anova.qmd, nonparametric.qmd, intro_qarto.qmd, mlm.qmd, sem.qmd and factor_analysis.qmd
 
 # ANOVA: Including Repeated Measures & Factorial
 
@@ -321,7 +333,7 @@ While important, outliers and influential cases rarely influence results with a 
 
 ## Live-ish Coding
 
-* Please open the anova.R file provided
+* Please open the anova.qmd file provided
 
 # Non-Parametric Tests
 
@@ -336,7 +348,7 @@ While important, outliers and influential cases rarely influence results with a 
 
 ## Live-ish Coding
 
-* Please open the non_parametric.R file
+* Please open the nonparametric.qmd file
 
 # EFA & CFA
 
@@ -357,7 +369,7 @@ While important, outliers and influential cases rarely influence results with a 
 
 ## Live-ish Coding
 
-* Please open the efa_cfa.R file
+* Please open the factor_analysis.qmd file
 
 # Lunch Break 
 * Back at 2pm
@@ -373,7 +385,7 @@ While important, outliers and influential cases rarely influence results with a 
 
 ## Live-ish Coding
 
-* Please open the sem.R file
+* Please open the sem.qmd file
 
 # MLM (Fields et al, 2012)
 
@@ -391,7 +403,7 @@ While important, outliers and influential cases rarely influence results with a 
 
 ## Live-ish Coding
 
-* Please open the mlm.R file
+* Please open the mlm.qmd file
 
 # Quarto: Code + Text
 
@@ -402,7 +414,7 @@ While important, outliers and influential cases rarely influence results with a 
 
 ## Let's Talk About Quarto
 
-* Please open the quarto.qmd file
+* Please open the intro_quarto.qmd file
 
 # Final Thoughts
 
