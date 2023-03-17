@@ -1,0 +1,415 @@
+---
+title: "R Workshop"
+author: "Brier Gallihugh, M.S."
+date: "May 2023"
+date-format: "MMMM YYYY"
+format:
+  revealjs:
+    theme: dark
+    self-contained: true
+    slide-number: true
+warning: FALSE
+---
+
+## Fun Fact
+
+* If you're someone who likes to use
+
+```{r echo=FALSE, out.width = "30%", fig.align = "center"}
+knitr::include_graphics("jasplogo.png")
+```
+<br>
+<br>
+to run data analysis, you're using already "using"
+<br>
+<br>
+<span style="color:#3362B0;">`r fontawesome::fa(name = "r-project",height = "1.25em",width = "1.25em")`</span>
+
+## Downloading R
+
+:::: {.columns}
+::: {.column width="50%"}
+![](rlogo.png)
+:::
+
+::: {.column width="50%"}
+You'll want to download R first before downloading any additional software
+
+You can download the newest version of R (4.2) [here](https://cran.rstudio.com)
+:::
+::::
+
+## Downloading RStudio
+
+:::: {.columns}
+::: {.column width="50%"}
+![](rstudiologo.png)
+:::
+
+::: {.column width="50%"}
+RStudio is the last software program you'll need to get started
+
+You can download the newest version of RStudio (Dec 2022) [here](https://posit.co/download/rstudio-desktop/)
+:::
+::::
+
+## R "Quirks"
+
+:::: {.columns}
+::: {.column width="50%"}
+* R is <span style="color:red;">case sensitive</span> so what your spelling and the case you use
+  * Case =/= case
+:::
+
+::: {.column width="50%"}
+* R <span style="color:red;">hates</span> spaces for variable. It will not run with a space
+  * variable_1 is a <span style="color:green;">GOOD</span> variable name
+  * variable 1 is a <span style="color:red;">BAD</span> variable name
+:::
+::::
+
+## Installing and Loading Packages
+
+:::{.panel-tabset}
+
+### R Code
+```{r library}
+#| echo: true
+#| warning: false
+#| eval: false
+
+# To Install a Package
+install.packages("tidyverse")
+
+# To Load a Package
+library(tidyverse)
+```
+
+### Commentary
+* You only have to install a package once (one exception)
+
+* You must load a library every time you open an R file (.R, .qmd, .rmd, etc) or restart R/RStudio
+
+::: {.callout-important}
+A new install of R will remove all installed packages. You must either re-install the packages or save them prior to a new R installation. I'll cover how to save them at a later date
+:::
+:::
+
+## Importing Data
+
+:::{.panel-tabset}
+
+### Commentary
+* R works best with csv files (smaller in size) but it will take .sav files (SPSS) and other file formats as well (e.g., .tsv)
+
+* Oh and obviously it can read <span style="color:green;">Microsoft Excel</span> files
+
+### <span style="color:red;">R Code</span>
+```{r import data}
+#| echo: true
+#| eval: false
+
+# For CSV
+
+data <- read.csv("file_name.csv")
+
+# For TSV
+
+data <- read_tsv("file_name.tsv")
+
+# For SAV
+
+library(haven)
+data <- read_sav("file_name.sav")
+
+# For EXCEL
+
+library(readxl)
+data <- read_xlsx("file_name.xlsx")
+data <- read_xls("file_name.xls")
+```
+:::
+
+## Variable Types
+
+* Numerical
+  * A positive or negative number between (- $\infty$, $\infty$)
+
+* Integer
+  * A positive or negative whole number between (- $\infty$, $\infty$)
+
+* Factor
+  * A grouping category
+
+* Character
+  * A text string
+
+* Logical
+  * A `TRUE` or `FALSE` value (e.g., Is X > 1?)
+  
+* Date
+  * Exactly what you think it is
+
+# {dplyr} R package
+
+## Uses for the `dplyr` package
+
+* Primary use is to transform and manipulate data in a data set
+  * Calculate means, log transform, compute basic summary statistics
+
+* Anyone here who has maybe used database data will see it mimics SQL programming
+
+:::{.callout-note}
+For anyone who might work with database data, you can pull data from external databases with R and RStudio. We won't cover that in this workshop but you can do it
+:::
+
+## Live-ish Coding
+
+* Open the data_clean.R file provided. We're going to walk through some example code and then live code a little bit
+
+# {stringr} R package
+
+## Uses for the `stringr` package
+
+* Primarily used for dealing with character or string data
+  * Useful for free response questions
+  * Essentially it's the `dplyr` package for string variable types
+
+## Live-ish Coding
+
+* Go back to the data_clean.R file provided. We're going to walk through some example code and then live code a little bit
+
+# {lubridate} R package
+
+## Uses for the `lubridate` package
+
+* Primarily used for dealing with dates
+* Provides handy function for converting date formats into other date formats
+  * E.g., (MM-DD-YY to DD-MM-YY or Month Date, Year)
+
+:::{.callout-tip}
+It won't auto convert your dates to weird incorrect formats like certain spreadsheet programs might.
+:::
+
+## Live-ish Coding
+
+* Go back to the data_clean.R file provided. We're going to walk through some example code and then live code a little bit
+
+# {ggplot2} R package
+
+## Uses for the `ggplot2` package
+
+* This may be the most popular package download in R and it's probably not close
+* This is THE visualization package in R. If you can THINK of a graphic, this package can create it 
+  * E.g. box plots, box and whisker plots, violin plots, bar graphs, etc
+* If you're REALLY good, you can do this (credit @ralitza_s)
+
+## {background-image="fancyggplot.png"}
+
+## "Live"ish Coding
+
+* Go back to the data_clean.R file provided. We're going to walk through some example code and then live code a little bit
+
+# Exporting Data
+
+## 
+
+:::{.panel-tabset}
+
+### Commentary
+
+* Sometimes you want or need to export data you've cleaned to another program. Maybe you want to use a program like JASP
+
+* Or you're not comfortable using R for analyses yet so you want to use SPSS
+
+* Or maybe others on your team use a different program
+
+* R can export to Excel, SPSS, SAS, and CSV files
+
+### Excel
+
+```{r export excel}
+#| eval: false
+#| echo: true
+library(openxlsx)
+
+write.xlsx(df,file = "filename.xlsx")
+
+```
+
+### SPSS or SAS
+
+```{r export spss}
+#| eval: false
+#| echo: true
+library(haven)
+
+# For SPSS
+write_sav(df, path = "filename.sav")
+
+# For SAS
+write_sas(df, path = "filename.sas")
+```
+
+### CSV
+
+```{r export csv}
+#| eval: false
+#| echo: true
+#| execute: false
+
+write.csv(df, file = "filename.csv")
+
+```
+
+:::
+
+# Lunch Break
+* Back at 2pm
+
+# Putting It All Together From Start To Finish
+
+# Statistical Analyses in R
+
+# Correlation
+
+## Assumptions (Fields et al, 2012)
+
+* On at least an interval scale
+* Normality of Residuals
+
+## Live-ish Coding
+
+* Please see correlation.R file provided
+
+# T Tests
+
+## Assumptions (Fields et al, 2012)
+
+* Normality of Residuals
+* Independent Observations
+* Homogeneity of Variance
+
+## Live-ish Coding
+
+* Please see the correlation.R file provided
+
+# Regression
+
+## Assumptions (Fields et al, 2012)
+
+* Outliers and Influential Cases
+* Normality of Residuals
+* Independent Observations
+* Homogeneity of Variance
+
+::: {.callout-important}
+While important, outliers and influential cases rarely influence results with a sufficient sample size. Also difficult to say what "is" and "isn't" an outlier. Outlier shouldn't always mean removal
+:::
+
+## Live-ish Coding
+
+# End of Day 1
+
+# ANOVA: Including Repeated Measures & Factorial
+
+## Assumptions (Fields et al, 2012)
+
+* Normality Within Groups
+* Homogeneity of Variance
+* Independent Observations
+
+## Live-ish Coding
+
+* Please open the anova.R file provided
+
+# Non-Parametric Tests
+
+* Wilcoxon Ranked-Sum Test (i.e., Mann–Whitney Test)
+  * Non-parametric equivalent of the **independent samples** t-test
+* Wilcoxon Signed-Rank Test
+  * Non-parametric equivalent of the **dependent sample** t-test
+* Kruskal–Wallis Test
+  * Non-parametric equivalent of an ANOVA
+* Friedman’s Test
+  * Non-parametric equivalent of a repeated measures ANOVA
+
+## Live-ish Coding
+
+* Please open the non_parametric.R file
+
+# EFA & CFA
+
+## EFA Assumptions (Fields et al, 2012)
+
+* Sufficient Sample Size
+* Normality of Items
+* Correlation Between Items~1~
+* Appropriate Determinant (Det $>$ 1 x 10^-5^)
+
+::: {.callout-important}
+1. We want variables to correlate however we do not want them to correlate either <br> too low (**r** $<$ .30) or too high (**r** $>$ .80) across multiple items
+:::
+
+## CFA Assumptions
+
+* Multivariate Normality
+
+## Live-ish Coding
+
+* Please open the efa_cfa.R file
+
+# Lunch Break 
+* Back at 2pm
+
+# SEM
+
+## Assumptions To Test (Kaplan, 2001, p. 15218)
+
+* Multivariate Normality
+* No Systematic Missing Data
+* Sufficiently Large Sample Size
+* Correct Model Specification
+
+## Live-ish Coding
+
+* Please open the sem.R file
+
+# MLM (Fields et al, 2012)
+
+## Assumptions To Test
+
+* Outliers and Influential Cases
+* Normality of Residuals
+* Independent Observations^1^
+* Homogeneity of Variance
+
+::: {.callout-important}
+### A Note On Independence
+1. This assumption is not necessarily a concern given that MLM assumes observations are nested (Fields et al, 2012)
+:::
+
+## Live-ish Coding
+
+* Please open the mlm.R file
+
+# Quarto: Code + Text
+
+## The Holy Grail of Reproducibility
+
+* What if I told you that it was possible to generate 95% of what you need for a manuscript within RStudio AND you could integrate your analyses as well?
+* What if I also said you could export this to Microsoft Word?
+
+## Let's Talk About Quarto
+
+* Please open the quarto.qmd file
+
+# Final Thoughts
+
+##
+
+Firstly, thank you for your time this weekend and I hope you've learned something
+
+Second, this is A LOT. I crammed stuffed about 2 years of statistical analyses time and practice into like 2 days. It's okay and normal if you're swimming. I'm here if anyone has any questions after or even if they're using R and trying to do an actual analysis in R. People ask me for help all the time. I'm happy to help
+
+Finally, one last "minor" detail. Some of you already know this but lets just check out the following [link](https://stats-r-workshop.netlify.app)

@@ -1,0 +1,480 @@
+---
+title: "R Workshop: Data Visualization and Management"
+author: "Brier Gallihugh, M.S."
+date: today
+format:
+  html:
+    theme: default
+    code-annotations: select
+    self-contained: true
+toc: true
+toc-location: right
+toc-depth: 3
+warning: FALSE
+echo: true
+---
+
+## Installing The `Tidyverse` Package
+
+```{r library}
+#| eval: false
+#| output: false
+
+install.packages("tidyverse")
+library(tidyverse)
+```
+
+The above code is how you want to start any R script. You always want to install and load in any packages that you may need in order to run analyses. For this part of the R workshop we will be working with what is called the `tidyverse` package. It's essentially the go to array of packages in R for data science needs (and therefore a good portion of our needs as well)
+
+::: callout-tip
+### A Note On Packages & `library()` Function
+
+You only need to install a package once (unless you update your version of R). The package gets stored on your local computer. A `library()` function call imports the installed package from your local storage. Further, you only need to call the `library()` function once per R script
+:::
+
+## Working With The `dplyr` Package (Data Manipulation)
+
+```{r dplyr}
+#| output: false
+#| echo: true
+library(tidyverse) # <1>
+library(skimr) # <1>
+
+dplyr_data <- dplyr::starwars # <2>
+```
+
+1.  Call the tidyverse packages
+2.  We will be using the starwars data set for the `dplyr` tutorial. I've assigned it to the variable dplyr_data here.
+
+```{r dplyr skimr}
+skim(dplyr_data) # <1>
+```
+
+1.  We can view some of the key variable data using the `skim()`
+
+```{r dplyr head}
+#| eval: false
+head(dplyr_data) # <1>
+```
+
+1.  We can also use the `head()` function which simply gives you a print out of the first 5 rows of a data set.
+
+### Recoding Variables
+
+One variable when looking at the `starwars` data set might be sex. Here we can see it is coded as both a character and as either male, female or NA. For a simple recode we might wish to
+
+1.  Transform the variables into a factor
+2.  Change the naming convention to maybe 1, 0 and Unknown
+
+We can achieve this with the code below
+
+```{r dplyr recode}
+dplyr_data <- dplyr_data %>% 
+  mutate(sex = as.factor(sex), # <1>
+         sex = recode(sex, # <2>
+                      'male' = '0', # <2>
+                      'female' = '1')) # <2>
+```
+
+1.  To recode the variable `sex` we need to use the `mutate()` function and `as.factor()` functions as shown above
+2.  To recode the values for male and female to 0 and 1 respectively, we need to use the `recode()` function as shown here. ::: {.callout-tip} \### A Note On %\>% Operator You may have noticed this %\>% operator. This is a handy operator that essentially takes the data on the left hand side and "pipe"s it into whatever is on the right as the first argument. This is most effective when the right hand function is expecting some form of a data set :::
+
+::: callout-tip
+### A Note On `dplyr::recode()` Function
+
+The `recode()` function in the `dplyr` package uses what is called `OLD` to `NEW` syntax. This just means that when renaming variables as shown here, you want to list the original variable name followed by you new desired variable name
+:::
+
+### Creating Variables
+
+Creating variables in R can be done a couple of ways. One is a little clunky (from a code perspective) and the other is more elegant. I'll cover the more clunky way first followed by the more elegant way second. I'll illustrate this by creating a variable that takes the `mass` variable from the `starwars` data set and reduces it by 10 units
+
+```{r dplyr creating}
+dplyr_data$mass_10a <- dplyr_data$mass - 10 # <1>
+
+
+dplyr_data <- dplyr_data %>% # <2>
+  mutate(mass_10b = mass - 10) # <2>
+```
+
+1.  This ways is relatively simply because you can think of it as a simple formula notation. However, it's a little clunky because typically adding a \$ operator is considered poor coding practice
+
+2.  The more elegant way to create a variable is to simply again use the `mutate()` function
+
+::: callout-tip
+### A Note On the \$ Operator
+
+The \$ operator simply says from the data set on the left of the operator, please find (or create) the variable on the right. In this case, from the `dplyr_data` data, create the variable `mass_10a`
+:::
+
+### Filtering Variables
+
+Keeping with the `starwars` data set, we might wish to revisit our earlier mutate of the male and female `sex` variable categories. Suppose for an analysis we wish to only include the male and female `starwars` characters? For this we might wish to filter so that our data only contains males and females. The code below will illustrate exactly how to do this
+
+```{r dplyr filter}
+dplyr_data_mf <- dplyr_data %>% # <1>
+  filter(sex == 1 | sex == 0) # <1>
+```
+
+1.  Here we have a `filter()` function that takes an argument for which conditions to include \[`==`\]. In this case we have when sex = 1 OR \[`|`\] when sex = 0.
+
+::: callout-tip
+### A Note on Syntax
+
+The `filter()` function uses the notation `==` to serve as "equals". You may also tell `filter()` what NOT to include with the notation `!=`
+:::
+
+### Reverse Coding
+
+It is not uncommon for many of you to work with scales that might require some form of reverse coding. This can be accomplished using the following syntax. What is left will be the original dataframe with added columns for the items that we've reverse coded. They will have a "\_R" variable name for ease of use
+
+```{r psych reverse_code}
+library(tidyverse)
+library(psych) # <1>
+
+df <- data.frame(Q1 = c(1,3,4,5,6,7), # <2>
+                 Q2 = c(3,4,5,5,7,7), # <2>
+                 Q3 = c(1,2,2,4,1,1)) # <2>
+
+reverse_key <- c(1,-1,1) # <3>
+
+df_R <- data.frame(reverse.code(keys = reverse_key, # <4>
+                   items = df[,c("Q1","Q2","Q3")], # <5>
+                   mini = 1, # <6>
+                   maxi = 7)) %>% # <7>
+  rename("Q2_R" = "Q2.") # <8>
+
+df <- right_join(df,df_R, # <9>
+                keep = FALSE) # <10>
+
+print(df)
+```
+
+1.  The `psych` package contains a `reverse.code()` function for scale items
+2.  There are no convenient pre-built data sets for this so I've created a quick toy one called `df` with the variables Q1, Q2, and Q3
+3.  The `reverse.code()` function requires a `keys` argument which is essentially a numerical vector of length of the reverse coded items that correspond sequentially to which items are (`-1`) and aren't (`1`) reverse coded
+4.  This is the start of the `reverse.code()` function within a new dataframe
+5.  I've subset (only included) the scale items here using this notation
+6.  Mini refers to the lowest possible value for the scale (i.e., 1)
+7.  Maxi refers to the highest possible value for the scale (i.e., 7)
+8.  I've added a `rename()` function to rename the reverse coded items from "`ItemX.`" to "`ItemX_R`" so we can track which items are the reverse coded one's later
+9.  Joining the two data frames into the original one so we only have to worry about the original data set
+10. Refers to keeping the keys used to join the two data frames (i.e., unique identifiers). We don't want to keep them here
+
+## Working With The `stringr` Package (Working w/ Strings)
+
+The `stringr` package is primarily used when working with what are known as strings of data. Essentially text box types of free response options. For example maybe in a Qualtrics form you allow someone to list "Other" as their religious belief system but ask them upon that selection choice to type out a better word. Same might be true for gender for example. Below we'll use the `words` data set to some basic text manipulation with the first 10 rows of data. On the right, we will see our original data set. However, on the right we will see that data set ultimately filtered by whether or not there is an `ab` in the `words` variable for a given observation.
+
+### Text Detection With `stringr` Package
+```{r stringr}
+library(tidyverse)
+
+stringr_data <- data.frame(stringr::words %>% # <1>
+                             head(10)) %>% # <1>
+  rename("words" = "stringr..words.....head.10.") # <2>
+
+stringr_data_original <- stringr_data %>%  # <3>
+  mutate(match = str_detect(words,pattern = "ab")) # <4>
+
+
+stringr_data_new <- stringr_data_original %>% # <5>
+  filter(match == TRUE) # <5>
+```
+1. Here I am converting the stringr data into a data frame and selecting the first 10 observations for simplicity.
+2. I'm also using the `rename()` function to change the preset variable name to "words".
+3. I'm "piping" the stringr_data into the `mutate()` function
+4. This line shows that I am creating a variable called `match` that will output a `TRUE` or `FALSE` if in the column `words` there is a pattern of `"ab"`.
+5. I am filtering the column `match` by whether or not it is `TRUE` (i.e., whether an observation consists of the pattern "ab")
+
+:::: {.columns}
+::: {.column width="50%"}
+### Original Output
+```{r print original}
+#| echo: false
+print(stringr_data_original)
+```
+:::
+::: {.column width="50%"}
+### New Output
+```{r print new}
+#| echo: false
+print(stringr_data_new)
+```
+:::
+::::
+
+### Text Replacement With The `stringr` Package
+
+While we've seen how to pull out matching observations using text responses, maybe we want to actually modify the responses. We can do that as well. We will demonstrate using the new data frame consisting of 3 words. Let's as an example replace the pattern "ab" with nothing. We see how to do that below
+
+```{r text replacement}
+#| echo: true
+stringr_data_new <- stringr_data_new %>% 
+  mutate(across(.cols="words", # <1>
+                .fns=str_replace, # <2>
+                pattern = "ab", # <3>
+                replacement = "")) # <4>
+
+print(stringr_data_new)
+```
+1. Here I am specifing that I wish to apply a function to the `words` column
+2. The function I wish to apply is the `str_replace` function which takes two arguments (`pattern` and `replacement` which I'm about to specify)
+3. I specify the pattern I'm looking for as `"ab"`
+4. I specify what I would like to replace that pattern with. In this case I don't want anything so I just put `""`
+
+## Working With The `lubridate` Package (Date Data)
+
+Personally, I don't work with date data very often. Usually time simply isn't a variable I'm interested in. However, for many of you who may be clinical or health focused, this is likely not your experience. Lets see how we can use the `lubridate` package to mess with date formatted data
+
+### Converting to Date Format
+
+```{r lubridate}
+#| output: false
+library(tidyverse)
+
+lubridate_data <- lubridate::lakers
+
+lubridate_data <- lubridate_data %>% 
+  mutate(across(.cols=date, # <1>
+                .fns=ymd)) %>% # <1>
+  mutate(date_myd = format(as.Date(date),"%m-%d-%Y")) # <2>
+```
+1. Here I am saying I wish to apply the function `ymd()` to the `date` column
+2. For this line, I am saying I wish to create a new variable called `date_myd` by formatting the `date` variable both as a date AND then formatted to a mm-dd-yyyy format. That corresponds to the `"%m-%d-%Y"` string we see on this line. 
+
+### Modifying Date Format
+
+We can see here that we've converted a numeric value in the format (YYYYMMDD) into a date in the "Year-Month-Date" format. This even looks a little more appealing to the eye especically as you're scanning the date. However, what if you don't like YYYY-MM-DD format and would rather have something like MM-DD-YYYY format instead as is common in the US? Below you can see how to take the format we just used and convert it to the more US common syntax shown on the left. On the right, we can see how to do it for the more EU common syntax of DD-MM-YY
+
+```{r lubridate modify EU}
+lubridate_data <- lubridate_data %>% # <1>
+  mutate(date_dmy = format(as.Date(date),"%d-%m-%Y")) # <1>
+```
+1. Here I am doing the same as earlier but I am changing the format code to be dd-mm-yyyy using the string `"%d-%m-%Y"`
+
+:::: {.columns}
+
+::: {.column width="50%"}
+### May-20-2023 Format
+```{r US print}
+#| echo: false
+print(head(lubridate_data$date_myd,1))
+```
+:::
+
+::: {.column width="50%"}
+### 20-May-2023 Format
+```{r EU print}
+#| echo: false
+print(head(lubridate_data$date_dmy,1))
+```
+:::
+::::
+
+## Working With The `ggplot2` Package
+
+### Standard Histogram With Density Curve
+
+```{r basic ggplot2 density histogram}
+library(tidyverse)
+library(jtools)
+  
+gender <- rep(c("male","female"),50) # <1>
+test <- rnorm(100,mean = 75,sd=2) # <1>
+  
+df <- data.frame(gender,test) # <1>
+
+density_plot <- ggplot(df,aes(x = test)) + # <2>
+  geom_histogram(aes(y=after_stat(density)),binwidth = 1) + # <3>
+  stat_function(fun = dnorm, # <4>
+                args = list(mean = mean(test), # <5>
+                            sd = sd(test)), # <5>
+                col = "blue", # <6>
+                linewidth = 1) + # <6>
+  jtools::theme_apa() + # <7>
+  labs(title = "Figure 1. Histogram of Test Scores", # <8>
+       x = "Test Scores", # <8>
+       y = "Score Density") # <8>
+
+ggsave("histogram.png") # <9>
+print(density_plot) # <10>
+```
+
+1.  Creation of a basic data set consisting of 100 observations of 2 variables (gender and test)
+2.  Initial ggplot2 taking the arguments for df as the data and test as our variable to create a histogram of
+3.  The `geom_histogram()` tells `ggplot2` what type of geom to draw using the `aes()` data above. The `aes(y=after_stat(density))` tells ggplot to convert the y axis as a function of density (vs count which is the default)
+4.  This `stats_function` allows us to graph a statistic onto the graph. In this case we want it to graph a normal distribution (the `dnorm` function) of the variable we care about.
+5.  The `stats_function` takes an `args()` function that we have to give it the *mean* and *sd* of the variable we care about. This is shown here
+6.  These provide some general aesthetic choices so we've specified the curve to be colored [blue]{style="color:blue;"} with a relatively small line width of 1.
+7.  The `theme_apa()` function simply modifies the `ggplot2` graph to roughly align with APA formatting
+8.  The `labs()` function allows us to add labels to our prospective histogram
+9.  This will save the built graphic as a .png file
+10. This will print the `ggplot2` column plot
+
+### Standard Column Bar Graph
+
+```{r basic ggplot2 column graph}
+library(tidyverse)
+library(jtools)
+
+col_data <- mtcars # <1>
+
+skimr::skim(col_data) # <1>
+```
+
+1. The mtcars data set comes with the `ggplot2` package. Finally I used the `skim()` function to take a quick look at the data
+
+```{r col plot}
+col_data <- col_data %>% # <2>
+  group_by(cyl) %>% # <2>
+  summarize(n = n(), # <2>
+            mpg_average = mean(mpg)) # <2>
+
+col_plot <- ggplot(col_data,aes(x = as.factor(cyl), # <3>
+                                y = mpg_average, # <3>
+                                fill = as.factor(cyl))) + # <3>
+  geom_col(color = "black") + # <4>
+  labs(x = "Number of Cylinders", 
+       y = "Average Fuel Economy (mpg)",
+       title = "Figure 2. Average Fuel Economy by Cylinder Count",
+       caption = "Source: Data from the mtcars data set") +
+  jtools::theme_apa() +
+  theme(plot.caption = element_text(hjust = 0)) + # <5>
+  scale_fill_manual(values = c("grey50","grey80","grey100")) # <6>
+
+ggsave("col_plot.png")
+print(col_plot)
+```
+
+2.  I want to modify my data so that I have it grouped by `cyl` and `n()` and `average_mpg` are calculated
+3.  I'm starting to layer my column plot with this. `aes()` is where you put your important data (e.g., x and y variables)
+4.  The `geom_col()` tells `ggplot2` what type of geom to draw using the `aes()` data above
+5.  The `theme(plot.caption = element_text(hjust = 0))` just left justifies the caption
+6.  The `scale_fill_manual()` tells `ggplot2` what to assign for the `fill` variable in the `aes()` function
+
+### Standard Boxplot Graph
+
+```{r basic boxplot}
+library(tidyverse)
+library(jtools)
+bplot_data <- mtcars
+
+box_plot <- ggplot(bplot_data,aes(x = as.factor(cyl),
+                                  y = mpg)) + 
+  geom_boxplot(outlier.shape = NA) + # <1>
+  labs(x = "Number of Cylinders", 
+       y = "Average Fuel Economy (mpg)", 
+       title = "Figure 3. Boxplot of Distribution of Average Fuel Economy by Cylinder Count",
+       caption = "Source: Data from the mtcars data set") +
+  jtools::theme_apa() +
+  theme(plot.caption = element_text(hjust = 0)) +
+  scale_fill_manual(values = c("grey50","grey80","grey100"))
+
+ggsave("box_plot.png")
+print(box_plot)
+```
+
+1.  The beauty of `ggplot2` is that there is a lot of overlap between different geom. The data to make a column chart vs a box plot in `ggplot2` is just the `geom_boxplot` vs `geom_col` function calls shown here
+
+### Standard Violin Plot
+
+```{r basic violin plot}
+library(tidyverse)
+library(jtools)
+violin_data <- mtcars
+
+violin_plot <- ggplot(violin_data,aes(x = as.factor(cyl),
+                                      y = mpg,
+                                      fill = as.factor(cyl))) + 
+  geom_violin(draw_quantiles = c(.25,.50,.75)) + # <1>
+  labs(x = "Number of Cylinders",
+       y = "Average Fuel Economy (mpg)",
+       title = "Figure 4. Violin Plot of Distribution of Average Fuel Economy by Cylinder Count",
+       caption = "Source: Data from the mtcars data set") +
+  jtools::theme_apa() +
+  theme(plot.caption = element_text(hjust = 0)) + 
+  scale_fill_manual(values = c("grey50","grey80","grey100"))
+
+ggsave("violin.png")
+violin_plot
+```
+
+1. The `draw_quartiles` function takes a numeric list to represent the quartiles you want. I've chosen the most common of 25%, 50% and 75% but you can input any set of 3 values you'd like
+
+### Standard Line Graph
+
+```{r basic ggplot2 line graph}
+library(tidyverse)
+library(jtools)
+library(skimr)
+
+line_data <- txhousing # <1>
+skimr::skim(line_data) # <1>
+```
+1.  We're now using a Texas housing data set found the `ggplot2` package. We can take a look at it by using the `skim()` function in the `skimr` package
+
+```{r line plot}
+line_data <- line_data %>% # <2>
+  group_by(year) %>% # <2>
+  summarize(total_sales = sum(sales, na.rm = TRUE)) # <2>
+
+line_plot <- ggplot(line_data,aes(x = year, # <3>
+                                  y = total_sales)) + # <3>
+  geom_point() + # <4>
+  geom_line() + # <5>
+  labs(x = "Year", # <6>
+       y = "Total Housing Sales", # <6>
+       title = "Figure 5. Total Texas Housing Sales By Year", # <6>
+       caption = "Source: Data from the ggplot2 data set") + # <6>
+  scale_x_continuous(breaks = seq(2000,2015,2)) + # <7>
+  jtools::theme_apa() +
+  theme(plot.caption = element_text(hjust = 0))
+
+ggsave("line.png")
+print(line_plot)
+```
+2. It might be useful to see how sales have changed over time within Texas. As such we might want to summarize the total number of home sales by year. How to do this is illustrated here with a `group_by()` and `summarize()` function.
+3. We need to feed the `ggplot` object our `aes()` variables. For this we've selected `year` and `total_sales` as our x and y variable respectively
+4. We might want to add points to our line graph for readability so we can add a `geom_point()` layer
+5. Now we want to add our actual lines. We can do that by providing a `geom_line()` layer
+6. Again we are adding our typical labels here
+7. This `scale_x_continous` variable might seem weird. However if we look at our data we will see that our year variable is continuous rather than categorical. Further, the initial breaks skip by intervals of 5 between 2000 and 2015. As such, we may want to change this. We can do that with this function call. The `seq` function allows us to dictate the min and max of the x values and how we scale our graph. I've choosen to go by increments of 2.
+
+### Standard Column Bar Graph W/ Std. Error
+
+```{r basic ggplot2 column graph w std error}
+library(tidyverse)
+library(jtools)
+col_SE_data <- mtcars
+
+col_SE_data <- col_SE_data %>% # <1>
+  group_by(cyl) %>% # <1>
+  summarize(n = n(), # <1>
+            mpg_average = mean(mpg, na.rm = TRUE), # <1>
+            sd = sd(mpg, na.rm = FALSE), # <1>
+            se = sd/sqrt(n)) # <1>
+
+col_SE_plot <- ggplot(col_SE_data,aes(x = as.factor(cyl), # <2>
+                                      y = mpg_average, # <2>
+                                      fill = as.factor(cyl))) + # <2>
+  geom_col(color = "black") + # <3>
+  geom_errorbar(aes(ymax = mpg_average + se, # <4>
+                    ymin = mpg_average - se), width = .5) + # <4>
+  labs(x = "Number of Cylinders", # <5>
+       y = "Average Fuel Economy (mpg)", # <5>
+       title = "Figure 6. Average Fuel Economy by Cylinder Count", # <5>
+       caption = "Source: Data from the mtcars data set") + # <5>
+  scale_fill_manual(values = c("grey50","grey80","grey100")) + # <6>
+  jtools::theme_apa() + 
+  theme(plot.caption = element_text(hjust = 0))
+
+ggsave("col_se.png")
+print(col_SE_plot)
+```
+
+1. For the standard error chart, we have to borrow a bit from our previous line chart syntax as we need to manually compute some group level statistics in order to calculate *SE*. Here we're grouping by `cyl` and we need to compute the *n* and *SD* to compute the SE. This syntax shows how to do this
+2. We need to provide our `aes()` factors. Here we want `cyl`,`mpg_average` and a `fill` aesthetic (for color)
+3. We need to add our standard `geom_col` layer
+4. For our error bars, we want to call `geom_errorbar` and designate our ymax (upper level) and ymin (lower level) bands. This will do that
+5. Adding our usual labels
+6. Modify our colors for the column
