@@ -1,0 +1,101 @@
+---
+title: "T-tests: Differences In Means"
+author: "Brier Gallihugh, M.S."
+date: today
+format: 
+  html:
+    theme: default
+    code-annotations: select
+    self-contained: true
+toc: true
+toc-location: right
+toc-depth: 4
+warning: FALSE
+echo: true
+---
+## An Introduction to T-tests
+
+## Assumptions of T-tests
+
+### Normality of Residuals
+
+```{r normality of residuals}
+library(tidyverse)
+
+data <- starwars %>% 
+  filter(sex == "male" | sex == "female") # <1> 
+
+model <- lm(height ~ sex, data = data) # <2>
+
+residuals <- data.frame(res = residuals(model)) # <3>
+
+problem <- residuals %>% filter(res > 2.5 | res < -2.5) # <4>
+
+nrow(problem)/nrow(data) 
+```
+1. Filtering for male the female using the `filter()` function
+2. Running a linear regression (that is a t-test here) to get residuals
+3. Calculate residuals for the observations
+4. Find potentially problematic observations
+5. Check for percent of cases (> 5% is not ideal)
+
+#### Graphical Depiction of Normality of Residuals
+
+```{r residual graph}
+residual_graph <- ggplot(residuals,aes(x = res)) + # <1>
+  geom_histogram(aes(y=after_stat(density))) +  # <2>
+  stat_function(fun = dnorm, # <3>
+                args = list(mean = mean(residuals$res), # <3>
+                            sd = sd(residuals$res)), # <3>
+                col = "blue", # <3>
+                linewidth = 1) + # <3>
+  theme_classic() # <3>
+
+print(residual_graph) # <4>
+```
+
+1. We are plotting the residuals here. We give ggplot a `geom` (i.e., histogram)
+2. We also give some other arguments like a density distribution.
+3. Here we are basically providing what is needed to draw a normal distribution given the data using the `stat_function()` function. The `col` and `linewidth` arguments simply change the colr and size of the normal curve. The `theme_classic()` just changes some aesthetic things. I personally prefer this theme for all ggplot2 graphs
+4. `print` will show us the graph output
+
+#### Statistical Depiction of Normality of Residuals
+
+We can also test the assumption statistically using the `shapiro.test()` function here
+
+```{r residuals stats}
+shapiro.test(residuals$res)
+```
+
+### Homogeneity of Variance
+
+Homogeneity of variance is important even for a basic t-test. Below is how we might go about testing this assumption.
+
+#### Graphical Depiction of Homogeneity of Variance
+
+```{r homogeneity graphical}
+variance_boxplot <- ggplot(data,aes(x = sex, # <1>
+                               y = height)) +  # <1>
+  geom_boxplot() + # <2>
+  theme_classic() # <2>
+
+print(variance_boxplot)
+```
+
+1. Graphically we can represent this as a boxplot with the group variable as the `x` and the outcome as the `y`. We see this here
+2. We again provide a `geom` for ggplot2 to use and provide a `theme()` choice here
+
+#### Statistical Depiction of Homogeneity of Variance
+
+We can also test the assumption using the Bartlett test. This can be shown below
+
+```{r homogeneity statistic}
+bartlett.test(height ~ sex,data)
+```
+
+## Running a T-test
+
+```{r t test run}
+t.test(height ~ sex, data = data) # <1>
+```
+1. The `t.test()` function will take a DV and IV argument as well as the dataframe used. We can see this here

@@ -1,0 +1,67 @@
+---
+title: "R Workshop: Structural Equation Modeling"
+author: "Brier Gallihugh, M.S."
+date: today
+format:
+  html:
+    theme: default
+    code-annotations: select
+    self-contained: true
+toc: true
+toc-location: right
+toc-depth: 3
+warning: FALSE
+echo: true
+---
+
+```{r library}
+library(tidyverse)
+library(lavaan)
+library(psych)
+library(semTools)
+library(semPlot)
+
+data <- psych::bfi[,16:25]
+
+cfa_data <- data[sample(nrow(data),300),]
+
+sem_data <- lavaan::PoliticalDemocracy
+```
+
+```{r cfa example}
+cfa_model <- 'nfactor  =~ N1 + N2 + N3 + N4 + N5
+              ofactor =~ O1 + O2 + O3 + O4 + O5'
+
+fit_cfa <- cfa(cfa_model, data = cfa_data)
+
+summary(fit_cfa, fit.measures = TRUE)
+
+semPaths(fit_cfa,'std')
+```
+
+
+```{r sem example}
+sem_model <- '
+  # measurement model
+    ind60 =~ x1 + x2 + x3
+    dem60 =~ y1 + y2 + y3 + y4
+    dem65 =~ y5 + y6 + y7 + y8
+    
+  # regressions
+    dem60 ~ ind60
+    dem65 ~ ind60 + dem60
+    
+  # residual correlations
+    y1 ~~ y5
+    y2 ~~ y4 + y6
+    y3 ~~ y7
+    y4 ~~ y8
+    y6 ~~ y8
+'
+
+fit_sem <- sem(sem_model, data = sem_data)
+summary(fit_sem, standardized = TRUE, fit.measures = TRUE)
+
+semPaths(fit_sem,'std')
+```
+

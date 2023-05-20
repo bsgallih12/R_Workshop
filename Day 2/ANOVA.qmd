@@ -1,0 +1,304 @@
+---
+title: "R Workshop: ANOVA, ANCOVA & Factorial ANOVA"
+author: "Brier Gallihugh, M.S."
+date: today
+format:
+  html:
+    theme: default
+    code-annotations: select
+    self-contained: true
+toc: true
+toc-location: right
+toc-depth: 3
+warning: FALSE
+echo: true
+---
+
+## Introduction to ANOVA
+
+## Running ANOVA
+
+```{r running anova}
+library(car)
+library(psych)
+library(multcomp)
+library(effects)
+library(tidyverse)
+library(sjstats)
+
+
+data <- starwars
+
+data <- data %>% 
+  dplyr::select(height,mass,hair_color,species,sex) %>% 
+  na.omit() %>% 
+  filter(species == "Gungan" | species == "Human" | species == "Wookiee")
+  
+height_species_aov <- aov(height ~ species, data = data)
+summary(height_species_aov)
+
+# Post Hoc Test (Tukey)
+TukeyHSD(height_species_aov)
+# Bonferroni Adjustment vs Tukey
+pairwise.t.test(data$height, data$species, p.adjust.method = "bonferroni")
+```
+
+## Assumptions of ANOVA
+
+### DV Normality
+
+#### Graphical
+
+```{r anova normality graph}
+density_plot <- data %>% ggplot(aes(x = height)) +
+  geom_histogram(aes(y= after_stat(density)),binwidth = 1) +
+  stat_function(fun = dnorm,
+                args = list(mean = mean(data$height),
+                            sd = sd(data$height)),
+                col = "blue",
+                linewidth = 1) +
+  labs(title = "Figure 1. Histogram of Height Scores",
+       x = "Height Scores",
+       y = "Density")
+
+density_plot
+
+# OR
+
+qqnorm(data$height)
+qqline(data$height, col = "blue")
+```
+
+#### Statistical
+
+```{r anova normality stat}
+psych::describe(data$height)
+shapiro.test(data$height)
+```
+
+### Homogeneity of Variance
+
+#### Graphical
+
+```{r anova homogeneity graph}
+boxplot(data$height ~ data$species)
+```
+
+#### Statistical
+
+```{r anova homogeneity stat}
+leveneTest(data$height ~ data$species)
+```
+
+## Introduction to ANCOVA
+
+## Running ANCOVA
+
+```{r running ancova}
+data <- data %>% mutate(species = as.factor(species))
+# Type I SS
+ancova <- aov(height ~ species + mass, data = data)
+summary(ancova)
+# Reversed Order
+ancova2 <- aov(height ~ mass + species, data = data)
+summary(ancova2)
+# Values are DIFFERENT. Why? R by default does ANOVA sequentially (which you usually don't want)
+
+# A fix is to use Type III SS. We can do that using the following code
+Anova(ancova, type = "III")
+
+# Std Means
+summary_data <- data %>% 
+  dplyr::group_by(species) %>% 
+  dplyr::summarise(n = n(),
+                   mean = mean(height))
+
+# Adjust means for covariate effect
+adjustedMeans<- effect("species", ancova, se=TRUE)
+summary(adjustedMeans)
+adjustedMeans$se
+
+# Post Hoc Tests
+posthoc <- glht(ancova, linfct = mcp(species = "Tukey"))
+summary(posthoc)
+confint(posthoc)
+
+# Effect size
+sjstats::anova_stats(Anova(ancova,type = "III"))
+```
+
+## Assumptions of ANCOVA
+
+### Predictor x Covariate Indepenence
+
+#### Statistical
+
+```{r predictor indep anova}
+predictor_assumption <- aov(mass ~ species, data = data)
+summary(predictor_assumption)
+
+# Here it's statistically significant (which is bad). It actually means we can't do this (unless we have random assignment) but we will anyway for the sake of an example
+```
+
+### Homogeneity of Regression Slopes
+
+#### Statistical
+
+```{r homogeneity of regression slopes stat}
+regression_slope_assumption <- aov(height ~ species*mass, data = data)
+Anova(regression_slope_assumption, type = "III")
+
+# Interaction in NOT significant so assumption is met
+```
+
+### Residual Normality (DV ~ IV)
+
+#### Statistical
+
+```{r ancova residual normality stat}
+height_mass_resid <- scale(residuals(aov(height ~ mass, data = data)))
+describe(height_mass_resid)
+
+shapiro.test(height_mass_resid)
+```
+
+#### Graphical
+
+```{r ancova residual normality graph}
+hist(height_mass_resid, col = 'beige', 
+     main="", xlab = "ANCOVA Residuals (z-score)",
+     probability = TRUE)
+curve(dnorm(x, mean = mean(height_mass_resid), 
+            sd = sd(height_mass_resid)), 
+            add = TRUE, lwd = 2, col = 'blue')
+```
+
+### Homogeneity of Variance
+
+#### Statistical
+
+```{r homogeneity stat}
+# Levene's Test to Assess Equal Variance for Species
+leveneTest(data$height ~ data$species)
+```
+
+#### Graphical
+
+```{r homogeneity graph}
+# Boxplot Height by Species
+boxplot(height ~ species,data=data, main="Height Variance by Species ",
+   xlab="Species", ylab="Height") 
+```
+
+### Linearity of CV & DV
+
+#### Graphical
+
+```{r ancova linearity graph}
+plot(data$height ~ data$mass,
+     pch = 16, bty = 'l',
+     xlab = "Mass",
+     ylab = "Height")
+```
+
+## Introduction to Factorial ANOVA
+
+## Running Factorial ANOVA
+
+```{r running factorial anova}
+factorial_data <- starwars %>%
+  select(mass,homeworld,height) %>% 
+  mutate(homeworld = as.factor(homeworld)) %>%
+  filter(homeworld == "Tatooine" | homeworld == "Naboo") %>% 
+  mutate(homeworld = dplyr::recode(homeworld,
+                                   "Tatooine" = 0,
+                                   "Naboo" = 1))
+
+factorial_data <- factorial_data %>% 
+  mutate(homeworldMC = factorial_data$homeworld - mean(factorial_data$homeworld),
+         heightMC = factorial_data$height - mean(factorial_data$height))
+
+# Modeling As A Regression (For SS Analyses)
+reg_fanova <- lm(mass ~ heightMC*homeworldMC,data = factorial_data)
+summary(reg_fanova)
+
+# Modeling As Factorial ANOVA
+aov_factorial <- aov(mass ~ height*homeworld, data = factorial_data)
+Anova(aov_factorial, type = "III")
+```
+
+```{r simple slopes factorial anaova}
+library(pequod)
+
+fit <- pequod::lmres(mass ~ heightMC*homeworldMC,data = factorial_data)
+slope_homeworld <- pequod::simpleSlope(fit,pred = "heightMC", mod1 = "homeworldMC")
+summary(slope_homeworld)
+PlotSlope(slope_homeworld)
+
+slope_height <- pequod::simpleSlope(fit,pred = "homeworldMC", mod1 = "heightMC")
+summary(slope_height)
+PlotSlope(slope_height)
+```
+
+## Assumptions of Factorial ANOVA
+
+### Linearity of IV to DV (Regression)
+
+#### Graphical
+
+```{r normality residuals graph}
+plot(lm(mass ~ height, data = factorial_data),2)
+
+plot(lm(mass ~ homeworld, data = factorial_data),2)
+```
+
+#### Statistical
+
+```{r normality residuals stat}
+psych::describe(resid(aov_factorial))
+shapiro.test(resid(aov_factorial))
+```
+
+### Homogeneity of Variance (Regression)
+
+#### Graphical
+
+```{r homogeneity of variance fanova graph}
+boxplot(factorial_data$mass ~ factorial_data$height)
+
+boxplot(factorial_data$mass ~ factorial_data$homeworld)
+
+# Residuals
+f_anova_residuals <- scale(residuals(lm(mass ~ heightMC*homeworldMC, data = factorial_data)))
+f_anova_fitted <- fitted(lm(mass ~ heightMC*homeworldMC, data = factorial_data))
+
+plot(f_anova_residuals ~ f_anova_fitted)
+```
+
+#### Statistical
+
+```{r homogeneity variance fanova stat}
+leveneTest(factorial_data$mass ~ factorial_data$height)
+
+leveneTest(factorial_data$mass ~ factorial_data$homeworld)
+
+leveneTest(factorial_data$mass ~ interaction(factorial_data$homeworld,factorial_data$height))
+```
+
+### Normallity of Residuals
+
+#### Graphical
+
+```{r normality of residuals factorial graph}
+plot(aov_factorial,2)
+```
+
+#### Statistical
+
+```{r normality residuals factorial stat}
+fanova_residuals <- aov_factorial$residuals
+
+shapiro.test(fanova_residuals)
+
+psych::describe(fanova_residuals)
+```

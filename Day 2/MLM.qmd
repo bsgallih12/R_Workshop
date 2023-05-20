@@ -1,0 +1,107 @@
+---
+title: "R Workshop: Multilevel Modeling"
+author: "Brier Gallihugh, M.S."
+date: today
+format:
+  html:
+    theme: default
+    code-annotations: select
+    self-contained: true
+toc: true
+toc-location: right
+toc-depth: 3
+warning: FALSE
+echo: true
+---
+
+# Relevant Packages and Data Import
+
+```{r library}
+library(tidyverse)
+library(nlme)
+
+surgeryData <- read.delim("Cosmetic Surgery.dat",  header = TRUE)
+
+outcome <- round(rep(runif(100, min = 20, max = 80)),0)
+predictor1 <- round(rep(runif(100, min = 1, max = 7)),0)
+predictor2 <- rep(c(1:2),50)
+group <- rep(c(1:4),25)
+
+data <- data.frame(outcome,predictor1,predictor2,group)
+```
+
+## Running A Multilevel Model
+
+```{r running a mlm}
+interceptOnly <-gls(outcome ~ 1, data = data, method = "ML")
+summary(interceptOnly)
+
+randomInterceptOnly <-lme(outcome ~ 1, data = data, random = ~1|group, method = "ML")
+summary(randomInterceptOnly)
+
+anova(interceptOnly, randomInterceptOnly)
+
+randomInterceptSurgery <-lme(outcome ~ predictor1, data = data, random = ~1|group, method = "ML")
+summary(randomInterceptSurgery)
+
+randomInterceptSurgeryQoL <-lme(outcome ~ predictor1 + predictor2, data = data, random = ~1|group, method = "ML")
+summary(randomInterceptSurgeryQoL)
+
+anova(randomInterceptOnly, randomInterceptSurgery,randomInterceptSurgeryQoL)
+
+
+addRandomSlope<-lme(outcome ~ predictor1 + predictor2, data = data, random = ~predictor1|group, method = "ML")
+summary(addRandomSlope)
+
+anova(randomInterceptSurgeryQoL,addRandomSlope)
+
+addReason<-lme(outcome ~ predictor1 + predictor2, data = surgeryData, random = ~predictor1|group, method = "ML")
+
+finalModel<-lme(outcome ~ predictor1 + predictor2 + predictor1:predictor2, data = data, random = ~predictor1|group, method = "ML")
+
+anova(addRandomSlope, addReason, finalModel)
+
+intervals(finalModel, 0.90)
+intervals(finalModel, 0.95)
+intervals(finalModel, 0.99)
+
+predict1Subset <- data$predictor2==1
+
+predict2Subset<- data$predictor2==2
+
+predict1Model<-lme(outcome ~ predictor1 + predictor2, data = data, random = ~predictor1|group, subset= predict1Subset, method = "ML")
+
+predict2Model<-lme(outcome ~ predictor1 + predictor2, data = data, random = ~predictor1|group, subset= predict2Subset, method = "ML")
+
+summary(predict1Model)
+summary(predict2Model)
+```
+
+## Multilevel Modeling Assumptions
+
+```{r mlm assumptions}
+# Residual Normality
+
+
+# Linearity
+
+# Multicollinearity
+car::vif(finalModel)
+
+# Homogeneity of Variance
+
+
+# Ind Errors (Durbin Watson Test)
+
+
+# Normality of Random Intercepts
+
+
+
+# Normality of Random Slopes
+
+
+```
+
+
+

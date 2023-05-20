@@ -1,0 +1,95 @@
+---
+title: "R Workshop: Factor Analysis"
+author: "Brier Gallihugh, M.S."
+date: today
+format:
+  html:
+    theme: default
+    code-annotations: select
+    self-contained: true
+toc: true
+toc-location: right
+toc-depth: 3
+warning: FALSE
+echo: true
+---
+
+```{r library}
+library(pastecs)
+library(GPArotation)
+library(psych)
+library(apaTables)
+set.seed(10311993)
+
+data <- psych::bfi
+
+proposed_scale <- psych::bfi[,1:15]
+
+proposed_scale <- proposed_scale %>% na.omit()
+
+proposed_scale <- proposed_scale[sample(nrow(proposed_scale), size=500), ]
+
+cor_proposed_scale <- cor(proposed_scale, use = "pairwise.complete.obs")
+
+cor_proposed_scale
+
+# For Readability
+round(cor(proposed_scale, use = "pairwise.complete.obs"),2)
+```
+
+```{r EFA assumptions}
+#Barlett Test for New Scale
+cortest.bartlett(cor_proposed_scale, n = 500)
+
+#KMO for New Scale
+KMO(cor_proposed_scale)
+
+#Determinent for New Scale
+det(cor_proposed_scale)
+```
+
+```{r efa factor structure}
+scree(cor_proposed_scale)
+fa.parallel(cor_proposed_scale, n.obs = 500) #Suggests 4 Factor Solution
+
+# Orthogonal (Non Correlated)
+orthoFA3 <- fa(r = cor_proposed_scale, nfactors = 3,rotate = 'varimax', use = "pairwise.complete.obs")
+#Show All Info
+print.psych(orthoFA3, sort = TRUE)
+
+# Oblique (Correlated)
+obliqueFA3 <- fa(r = cor_proposed_scale, nfactors = 3,rotate = 'oblimin', use = "pairwise.complete.obs")
+print.psych(obliqueFA3, sort = TRUE)
+```
+
+```{r factor solution assumptions}
+#Standard Residuals 
+obliqueFA3Residuals <- scale(obliqueFA3$residual)
+#Test Normality
+shapiro.test(obliqueFA3Residuals)
+#Histogram
+hist(obliqueFA3Residuals, col = 'lightgrey', 
+     main="", xlab = "EFA Model Residuals, FA = 3 (Oblique)",
+     probability = TRUE)
+curve(dnorm(x, mean = mean(obliqueFA3Residuals), 
+            sd = sd(obliqueFA3Residuals)), 
+            add = TRUE, lwd = 2, col = 'blue')
+```
+
+```{r reliability estimates}
+#Items
+Factor1<- c("A1","A2","A3","A4","A5")
+Factor2<- c("C1","C2","C3","C4","C5")
+Factor3<- c("E1","E2","E3","E4","E5")
+Overall <- c("A1","A2","A3","A4","A5","C1","C2","C3","C4","C5","E1","E2","E3","E4","E5")
+
+#Reliability Factor 1
+psych::alpha(proposed_scale[, Factor1], check.keys = TRUE)
+#Reliability Factor 2
+psych::alpha(proposed_scale[, Factor2], check.keys = TRUE)
+#Reliablity Factor 3
+psych::alpha(proposed_scale[, Factor3], check.keys = TRUE)
+#Overall Reliability
+psych::alpha(proposed_scale[, Overall], check.keys = TRUE)
+```
+

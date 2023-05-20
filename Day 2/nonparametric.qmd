@@ -1,0 +1,130 @@
+---
+title: "R Workshop: Non-Parametric Tests"
+author: "Brier Gallihugh, M.S."
+date: today
+format:
+  html:
+    theme: default
+    code-annotations: select
+    self-contained: true
+toc: true
+toc-location: right
+toc-depth: 3
+warning: FALSE
+echo: true
+---
+
+```{r library}
+set.seed(10311993)
+library(tidyverse)
+library(psych)
+library(palmerpenguins)
+
+data <- palmerpenguins::penguins %>% 
+  na.omit() %>% select(island,body_mass_g) %>% 
+  filter(island == "Biscoe" | island == "Dream")
+```
+
+# Independent Sample T Test (i.e., Wilcoxon’s Rank-Sum Test)^1^
+:::{.callout-tip}
+1. This is computationally the same as the Mann-Whitley test (Field et al, 2012)
+:::
+
+:::{.callout-caution}
+Non-parametric tests are NOT less powerful than their parametric counterpart as long as the distribution of interest is not normally distributed (Field et al, 2012)
+:::
+
+```{r ind t test non-para}
+# Two-Tailed (one-tailed "greater" diff is + OR "lesser" diff is -)
+# Correction for p value (TRUE by default, but can change to FALSE correction = FALSE)
+ind_t_nonpar <- wilcox.test(body_mass_g ~ island, data = data)
+
+# Effect Size (from Field et al, 2012)
+
+rFromWilcox<-function(wilcoxModel, N)
+{
+z<- qnorm(wilcoxModel$p.value/2)
+r<- z/ sqrt(N)
+return(r)
+}
+
+rFromWilcox(ind_t_nonpar,286)
+
+# Typical reporting for non-parametric involves median values
+descriptive_stats <- data %>% group_by(island) %>% summarize(group_size = n(),
+                                                                      median = median(body_mass_g),
+                                                                      mean = round(mean(body_mass_g, na.rm = TRUE),2),
+                                                                      sd = round(sd(body_mass_g, na.rm = TRUE),2))
+
+print(descriptive_stats)
+```
+
+# Dependent Sample T Test (i.e., Wilcoxon Signed-Rank Test)
+
+```{r dep t test non-para}
+data <- psych::sat.act %>% 
+  mutate(condition = rep(c(1,2),350),
+         ACT_2 = if_else(age < 39, ACT + 3, ACT -1))
+
+data_condition1 <- data %>% 
+  filter(condition == 1)
+
+data_condition2 <- data %>% 
+  filter(condition == 2)
+
+condition1_test <- wilcox.test(data_condition1$ACT,
+                           data_condition1$ACT_2,
+                           paired = TRUE,
+                           correct = FALSE)
+
+condition2_test <- wilcox.test(data_condition2$ACT,
+                           data_condition2$ACT_2,
+                           paired = TRUE,
+                           correct = FALSE)
+
+print(condition1_test)
+print(condition2_test)
+
+# Effect Size
+rFromWilcox(condition1_test,350)
+rFromWilcox(condition2_test,350)
+```
+
+# One Way ANOVA (i.e., Kruskal–Wallis Test)
+
+```{r anova non-para}
+data2 <- psych::sat.act[1:600,] %>% 
+  mutate(condition = as.factor(rep(c(1:3),200)),
+         rank = rank(ACT))
+
+# Condition 3 is control
+
+kruskal.test(ACT ~ condition, data = data2)
+
+pgirmess::kruskalmc(ACT ~ condition, data = data2)
+
+# Maybe we want to see the ranked means
+
+by(data2$rank,data2$condition,mean)
+
+# Maybe we just want to compare each exp group to the control (Lowers Odds of Type II error).
+# We can do that. But we need it to be the first level factor
+
+data2$condition <- relevel(data2$condition,3)
+
+pgirmess::kruskalmc(ACT ~ condition, data = data2, cont = "two-tailed")
+```
+
+# Repeated Measures ANOVA (i.e., Friedman's ANOVA)
+
+```{r repeated measures anova non-para}
+data3 <- data2 %>% 
+  mutate(ACT_2 = if_else(age < 39, ACT + 3, ACT -1)) %>% select(ACT,ACT_2)
+
+# Test
+friedman.test(as.matrix(data3))
+
+# Post Hoc
+pgirmess::friedmanmc(as.matrix(data3))
+```
+

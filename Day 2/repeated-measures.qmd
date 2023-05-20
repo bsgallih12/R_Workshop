@@ -1,0 +1,57 @@
+---
+title: "R Workshop: Repeated Measures"
+author: "Brier Gallihugh, M.S."
+date: today
+format:
+  html:
+    theme: default
+    code-annotations: select
+    self-contained: true
+toc: true
+toc-location: right
+toc-depth: 3
+warning: FALSE
+echo: true
+---
+
+```{r library}
+library(tidyverse)
+library(psych)
+library(nlme)
+
+participant <- seq(from = 1, to = 60, by = 1)
+
+condition <- rep(1:3,20)
+
+outcome1 <- round(runif(60,min = 1, max = 7),0)
+
+df <- data.frame(participant,condition,outcome1)
+
+df$outcome2 <- if_else(df$participant <= 30, df$outcome1 - .5, df$outcome1 - .2)
+
+# Change Data Format from "Wide" to "Long"
+df <- df %>% pivot_longer(cols = c(outcome1,outcome2),
+                          values_to = "outcome_pivot",
+                          names_to = "Time")
+```
+
+## Running a Repeated Measures ANOVA
+
+```{r running a repeated measures anova}
+repeat_anova <- nlme::lme(outcome_pivot ~ condition, data = df,
+                    random = ~1|Time, method = "ML")
+car::Anova(repeat_anova, type = c("III"))
+```
+
+## Assumptions of a Repeated Measures ANOVA
+
+```{r assumptions of repeated measures}
+# Residual Normality
+
+# Sphericity
+
+```
+
+
+
+

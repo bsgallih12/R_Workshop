@@ -1,0 +1,124 @@
+---
+title: "Correlation"
+author: "Brier Gallihugh, M.S."
+date: today
+format: 
+  html:
+    theme: default
+    code-annotations: select
+    self-contained: true
+toc: true
+toc-location: right
+toc-depth: 4
+warning: FALSE
+echo: true
+---
+
+## Introduction
+
+Correlations might be the most common statistical test run (especially early on in a project). For this part of the workshop we will be using the `mtcars` data set due to its many numerical values that we can assess for correlation. Below we will see the first 10 rows of the data set displayed
+
+```{r code}
+library(tidyverse)
+library(car)
+library(psych)
+
+data <- mtcars
+
+print(head(data,10)) # <1>
+```
+1.  Display the first 10 rows of the `mtcars` data. You can also return the last 10 rows with the following function `tail(data,10)`
+
+## Statistical Assumptions
+
+The primary assumption of a **Pearson's correlation coefficient** is that the data is on some kind of interval scale. However, if we wish to generalize, we must have a random large sample (unlikely) and the individual variables should be roughly normally distributed. This is the assumption we will focus on for this part of the workshop.
+
+### Normality of Variables
+
+For this part of the workshop, we are going to focus on the `mpg` and `wt` variables. We will be looking at normality both statistically~1~ as well as graphically.
+
+::: {.callout-important}
+### A Note About Statistical Assumption Testing
+1. Odds are your statistical test is going to fail pretty much every single time. Particularly if you use something like a Shapiro Wilk test, but we'll look at it anyway
+:::
+
+#### Graphical Depiction of Normality Assumption (mpg)
+```{r correlation mpg}
+#| layout-nrow: 1
+mpg_plot <- ggplot(data,aes(x = mpg)) + # <1>
+  geom_histogram(aes(y=after_stat(density))) + # <1>
+  stat_function(fun = dnorm, # <1>
+                args = list(mean = mean(data$mpg), # <1>
+                            sd = sd(data$mpg)), # <1>
+                col = "blue") + # <1>
+  theme_classic() # <1>
+
+print(mpg_plot)
+```
+1. This should look very familiar to the histogram part of the workshop
+
+#### Statistical Depiction of Normality Assumption (mpg)
+```{r correlation mpg stat}
+#| layout-nrow: 2
+
+print(psych::describe(data$mpg)) # <1>
+
+print(shapiro.test(data$mpg)) # <2>
+```
+1. The `psych` package has a bunch of nifty functions for social science research. One is the `describe()` function which gives you a bunch of variable level summary statistics (e.g., mean, median, se, etc.)
+2. The `shapiro.test()` performs a Shapiro Wilk test of normality. Keep in mind this particular test is very sensitive to sample sizes
+
+#### Graphical Depiction of Normality Assumption (wt)
+```{r correlation wt}
+#| layout-nrow: 1
+wt_plot <- ggplot(data,aes(x = wt)) +
+  geom_histogram(aes(y=after_stat(density))) + 
+  stat_function(fun = dnorm,
+                args = list(mean = mean(data$wt),
+                            sd = sd(data$wt)),
+                col = "blue") + 
+  theme_classic()
+
+print(wt_plot)
+```
+
+
+#### Statistical Depiction of Normality Assumption (wt)
+```{r correlation wt stat}
+#| layout-nrow: 2
+print(psych::describe(data$wt))
+
+print(shapiro.test(data$wt))
+```
+
+## Running An Actual Correlation
+
+There are multiple packages and methods for calculating a correlation in R depending on what you want to assess. The best to use for psychology is probably the  `corr.test()` function in the `psych` package because it allows you to change the type of correlation you wish to compute (e.g., spearman vs pearson) as well as generate confidence intervals and do p value adjustments
+
+```{r correlation syntax}
+corr_results <- corr.test(x = data$mpg, # <1>
+          y = data$wt, # <2>
+          use = "pairwise", # <3>
+          method = "pearson", # <4>
+          adjust = "holm") # <5>
+
+?corr.test()
+```
+1. Choose one of your variables to be your `x` variable
+2. Choose the other to be your `y` variable
+3. You can choose "pairwise" or "complete". For information on what each does, use the following function to access the documentation: `?psych::corr.test()`
+4. You can adjust method to be other ones like "spearman"
+5. You can also use "bonferroni" among a few others
+
+Below we will see the output of the correlation results as you might be used to seeing in a program like SPSS. 
+```{r correlation results}
+print(corr_results)
+```
+
+While the above is great, notice we didn't get a confidence interval output despite asking for it with `ci = TRUE`. Sometimes R will store complex computations within the output object (e.g., `corr_results`). To get this output we can put a $ after the output. If there is extra information stored, but not shown, we'll get a drop down box. We want the `ci` option. Below we will see the output that results from this. We should see the following:
+
+$r$ = -.87 , $p$ < .001 with a CI = [-.93,-.74]
+
+```{r correlation ci}
+print(corr_results$ci)
+```

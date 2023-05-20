@@ -1,0 +1,260 @@
+---
+title: "R Workshop: Linear & Logistic Regression"
+author: "Brier Gallihugh, M.S."
+date: today
+format:
+  html:
+    theme: default
+    code-annotations: select
+    self-contained: true
+toc: true
+toc-location: right
+toc-depth: 3
+warning: FALSE
+echo: true
+---
+## An Introduction to Regression
+
+## Linear Regression
+
+```{r import data}
+library(tidyverse)
+library(car)
+
+data <- starwars %>% select(height,mass,sex) %>% na.omit() # <1>
+```
+1. The above code takes the `starwars` data set and uses the `select()` function to pull out the columns labelled height, mass and sex. Then using the `na.omit()` function, I've removed (using listwise deletion) any rows which contain missing values
+
+### Running a Linear Regression
+
+Similar to correlation, regression (particularly multiple regression) is very common in the social sciences. As such, lets dive into an example again using the `starwars` data set. 
+
+```{r linear regression run}
+data <- data %>% 
+  filter(sex == "male" | sex == "female") %>% # <1>
+  mutate(sex = dplyr::recode(sex, # <2>
+                             "male" = 1, # <2>
+                             "female" = 0)) # <2>
+
+linear_regression <- lm(height ~ sex + mass, data = data) # <3>
+
+summary(linear_regression) # <4>
+```
+1. Here I want to filter out the data set for observations (rows) that meet the following conditions (in this case those with a sex "value" of either "male" or "female").
+2. I then want to recode the sex variables to a numeric value for the purposes of doing the linear regression using the `recode()` function. It takes the column as an input and takes the syntax "old value" to "new value".
+3. This is a basic linear regression formula using the `lm()` function. It takes the form DV ~ IV + IV, df).
+4. To see the results of the regression, we simply run the `summary()` function and specify the name we assigned the regression (i.e., linear_regression).
+
+## Assumptions of Linear Regression
+
+As some will attest to, we as social scientists don't always explicitly test our statistical assumptions (this is a problem). However, as a parametric test, regression consists of the following key assumptions: homogeneity of variance, residual normality, lack of multicollinearity, and the independence of errors. Further, we likely want to at least investigate the potentiality that there are outliers and influential cases. I'm going to show you how to test each of these assumptions.
+
+### Homogeneity of Variance 
+
+#### Graphical
+
+```{r linear regression homoscedasticity}
+# Should Be a Straight Line
+plot(linear_regression,1) # <1>
+```
+1. The `plot(object,1)` function when applied to a regression object will give you a plot assessing visually the homogeneity of variance assumption. The line should be roughly straight.
+
+#### Statistical
+
+```{r lienar regression homoscedasticity stat}
+library(lmtest)
+# Goldfield Quandt Test (Less than .05 BAD)
+gqtest(linear_regression) # <1>
+```
+1. Statistically, we can also investigate homogeneity of variance using a Goldfield Quandt Test. This is one test we hope is not statistically significant. To do this, we use the `gqtest()` function in the `lmtest` package.
+
+### Residual Normality
+
+Contrary to popular belief, normality doesn't typically refer to the distribution of each individual variable in a regression. What matters is that the model residuals will be roughly normally distributed. Below we will go through this. First, we'll look at the assumption graphically using what is known as a qq plot
+
+#### Graphical
+
+```{r linear regression normality}
+# Should Follow Straight Diagonal Line
+plot(linear_regression,2) # <1>
+```
+1. Use the `plot(object,2)` with a regression will give you a standard qqplot with a reference line. This line should look linear.
+
+#### Statistical
+
+We can also assess the assumption statistically using a Shapiro Wilks test. Keep in mind this test can be heavily influenced by sample size but nonetheless it is a start.
+
+```{r linear regression normality stat}
+shapiro.test(residuals(linear_regression)) # <1>
+```
+1. The `shapiro.test()` function will get us what we want. However, we need to make sure we get the residuals of the model so we need to use the `residuals()` function too. 
+
+### Multicollinearity
+
+Multicollinearity (or too high of correlation between variables) can be an issue. One could look at the correlation matrix but that's highly subjective. A better idea might be to use what is known as variance inflation factors. Essentially higher values (i.e., north of 10) indicate an issue with said factor (i.e., variable). Below is the code for this using the `car` package.
+
+#### Statistical (VIF)
+
+```{r linear regression multicollinearity}
+# Individual Predictors (Less than 10 is OK)
+car::vif(linear_regression) # <1>
+
+# Mean Across Predictors (Ideally Around 1)
+mean(vif(linear_regression)) # <2>
+
+# Tolerance (Greater than .20 Ideal)
+1/vif(linear_regression) # <3>
+```
+1. Less than 10 is solid for this metric
+2. You want the mean value to be around 1.0
+3. You want tolerance to be > .20
+
+### Independence of Errors
+
+Long story short, errors shouldn't be correlated with each other. We can assess this statistically using the Durbin Watson test. Here we want the test to not be statistically significant. We can use the `durbinWatsonTest()` function from the `car` function for this. The code is shown below.
+
+#### Statistical (Durbin Watson Test)
+
+```{r linear regression ind of errors}
+library(car)
+car::durbinWatsonTest(linear_regression)
+```
+
+### Finding Outliers & Influential Cases
+
+#### Residuals
+
+Typically, residuals outside of the range of -2.5 to 2.5 are a potential problem. However, this doesn't mean we should discard the data necessarily. We have to feel they are distinctly not in the population we're hoping to investigate. However, typically as a rule of thumb, having more than 5% of your cases being outside of this range is not ideal.
+
+```{r linear regression residuals}
+# Greater than 5% of Data Potentially Problematic
+data$residuals <- resid(linear_regression)
+summary(data$residuals)
+
+problem_residuals <- data %>% filter(residuals > 2.5 | residuals < -2.5) # <1>
+
+nrow(problem_residuals)/nrow(data) # <2>
+```
+1. This will filter the data set into observations which meet the criteria
+2. This tells me what percent of the cases are potentially problematic
+
+#### Influential Cases
+
+Maybe a more useful investigation is that involving influential cases (i.e., cases which have undue influence on the results). There are several metrics one can you. I'm just going to focus on Cooks distance. Essentially values over 1 are potentially problematic. Below is the code for this
+
+```{r linear regression influential cases}
+data$cooks_dist <- round(cooks.distance(linear_regression),5) # <1>
+# Greater Than 1 is Problematic
+summary(data$cooks_dist) # <2>
+```
+1. This rounds the values to 5 decimal places for ease of reading in addition to calculating the Cooks distance for each observation.
+2. `summary()` function says the max value is .36 so there are no individual cases here that are having undue influence on the results.
+
+## Logistic Regression
+
+So logistic regression is something I had to learn in order to do this workshop. Essentially however, logistic regression is used to give odds ratios of whether an observation belongs in one of two categories based on a set of inputs. In industry, this is actually considered a form of machine learning (so is most other regression). You can actually go above and beyond two categories but we're not going to talk about polynomial regression in this workshop. Below is how we run a logistic regression in R. 
+
+### Running a Logistic Regression
+
+```{r logistic regression run}
+# Create Logistic Model w/ Multiple Predictors
+log_regression <- glm(sex ~ height + mass, family = binomial(link = "logit"), data = data) # <1>
+summary(log_regression) # <2>
+
+# Determine Chi Square Diff
+modelChi <- log_regression$null.deviance - log_regression$deviance # <3>
+modeldf <- log_regression$df.null - log_regression$df.residual # <3>
+chisq_prob <- 1 - pchisq(modelChi,modeldf) # <3>
+print(chisq_prob)
+
+# Odds Ratios
+exp(log_regression$coefficients) # <4>
+
+# CI
+exp(confint(log_regression)) # <5>
+
+# Effect Size
+effect_size <- modelChi/log_regression$null.deviance # <6>
+print(effect_size)
+```
+1. This is your basic logistic regression formula. The `family = binomial(link = "logit")` tells R that we want this model to be a logistic regression. 
+2. Summarizes the results of the logistic regression
+3. Calculates a Chi Square Test to determine if the model is better than chance (less than .05)
+4. Exponentiation the coefficients will give you the odds ratios
+5. We can also get the confidence intervals of the odds ratios using the `confint()` function
+6. We can calculate an effect size using this formula
+
+## Assumptions of Logistic Regression
+
+Like regular regression, logistic regression also has assumptions that must be met. They are the linearity of each predictor with the **log** of the outcome, independence of errors, and multicollinearity. I will show you how to test each of these below. 
+
+### Linearity w/ Log of Outcome (Each Predictor)
+
+#### Statistical
+
+```{r logistic linearity stat}
+data$massINT <- data$mass*log(data$mass) # <1> 
+data$heightINT <- data$height*log(data$height) # <1>
+
+linearity_assumption <- glm(sex ~ height + mass + massINT + heightINT, family = binomial(link = "logit"), data = data) # <2>
+
+summary(linearity_assumption)
+```
+1. You want the interaction terms of each predictor with the log of the outcome. These need to go into the logistic regression.
+2. You can see them added here. You want none of the interaction terms to be statistically significant
+
+#### Graphical
+
+You can also just plot the logistic regression with the interaction terms and see if you get a roughly straight line.
+
+```{r logistic linearity graph}
+plot(linearity_assumption,2)
+```
+
+### Independence of Errors
+
+Like regular regression, we can test this assumption using a Durbin Watson Test. The code here is below.
+
+#### Statistical
+
+```{r logisitc ind of error stat}
+durbinWatsonTest(log_regression)
+```
+
+### Multicollinearity
+
+Multicollinearity can also be assessed just like regression by using the `vif()` function as well as the `1/vif()` function. We want these to be less than 10 and greater than .20 respectively.
+
+#### Statistical
+
+```{r logistic multicollinearity stat}
+vif(log_regression)
+
+1/vif(log_regression)
+```
+
+### Finding Outliers & Influential Cases
+
+#### Residuals
+
+Residuals can be assessed the same was as it is in regular linear regression. The code is below as a refresher.
+
+```{r logistic regression residuals}
+# Greater than 5% of Data Potentially Problematic
+data$residuals_log <- resid(log_regression)
+summary(data$residuals_log)
+
+log_prob <- data %>% filter(residuals_log > 2 | residuals_log < -2)
+
+round(nrow(log_prob)/nrow(data),3)
+```
+
+#### Influential Cases
+
+As with residuals and linear regression compared to logistic regression, the same is true for influential cases. You can see the code for this below.
+
+```{r logistic regression influential cases}
+data$cooks_dist_log <- cooks.distance(log_regression)
+# Greater Than 1 is Problematic
+summary(data$cooks_dist_log)
+```

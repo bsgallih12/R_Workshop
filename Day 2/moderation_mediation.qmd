@@ -1,0 +1,122 @@
+---
+title: "R Workshop: Mediation and Moderation"
+author: "Brier Gallihugh, M.S."
+date: today
+format:
+  html:
+    theme: default
+    code-annotations: select
+    self-contained: true
+toc: true
+toc-location: right
+toc-depth: 3
+warning: FALSE
+echo: true
+---
+
+```{r library}
+set.seed(10311993)
+library(mediation)
+library(psych)
+library(tidyverse)
+
+# Created Toy Data Set
+# Variance Covariance
+sigma <- rbind(c(1,-0.4,-0.3), c(-0.4,1, 0.7), c(-0.3,0.7,1))
+# Variable Mean
+mu <- c(7, 50, 7) 
+# Generate the Multivariate Normal Distribution
+df <- as.data.frame(mvrnorm(n=100, mu=mu, Sigma=sigma))
+df <- round(df,0)
+colnames(df) <- c("mediator1","outcome","predictor")
+df$condition <- rep(1:2,50)
+```
+
+## Running a Moderation Analysis in R
+
+```{r running moderation}
+moderation <- lm(outcome ~ condition*predictor, data = df)
+summary(moderation)
+```
+
+## Running a Mediation Analysis in R
+
+```{r running mediation}
+#Regress M on X
+outcomeM_fit <- lm(mediator1 ~ condition, data = df)
+summary(outcomeM_fit)
+
+#Regress Y on M and X
+outcomeY_fit <- lm(outcome ~ mediator1 + condition, data = df)
+summary(outcomeY_fit)
+
+#Run Mediation with Bootstrap
+outcome_fit <- mediation::mediate(outcomeM_fit,
+                                  outcomeY_fit,
+                                  treat = "condition",
+                                  mediator = "mediator1",
+                                  boot = TRUE,
+                                  sims = 5000)
+#Summary of Mediation
+summary(outcome_fit)
+
+#Path Coefficients
+plot(outcome_fit)
+```
+
+## Assumptions of Moderation Analyses
+
+```{r moderation assumptions}
+# Residual Normality
+shapiro.test(residuals(moderation))
+
+# Multicollinearity
+car::vif(moderation, type = c("predictor"))
+
+# Independence of Errors
+car::durbinWatsonTest(moderation)
+```
+
+## Assumptions of Mediation Analyses
+
+```{r mediation assumptions}
+# Linearity
+plot(lm(outcome ~ predictor, data = df),2)
+plot(lm(outcome ~ mediator1, data = df),2)
+plot(lm(mediator1 ~ predictor, data = df),2)
+# Multicollinearity
+cor.plot(df)
+```
+
+# Using Moderation and Mediation Usings Hayes PROCESS Macro (for R)
+
+Click on the following [link](https://www.afhayes.com/public/processv43.zip) to download the R script for the PROCESS macro for R.
+
+```{r run hayes file}
+source("process.R")
+```
+
+## A Moderation Example Using Hayes PROCESS Macro
+
+```{r running moderation with hayes}
+process(data = df,
+        y = "outcome",
+        x = "predictor",
+        w = "mediator1",
+        model = 1,
+        stand = 1)
+
+```
+
+## A Mediation Example Using Hayes PROCESS Macro
+
+```{r running mediation with hayes}
+process(data = df,
+        y = "outcome",
+        x = "predictor",
+        m = "mediator1",
+        model = 4,
+        stand = 1,
+        boot = 5000,
+        seed = 10311993)
+```
